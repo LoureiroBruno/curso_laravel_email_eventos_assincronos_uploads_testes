@@ -1,0 +1,142 @@
+TOP 01
+
+# php artisan make:mail nomedotipo
+dentro de SeriesCreated temos uma classe qualquer, só que além de estender o Mailable ela também possui algumas traits que o Laravel nos fornece, 
+no caso Queueable e SerializesModels.
+
+A classe SeriesCreated estende um Mailable, isso significa que ela é enviável e possui alguns métodos como o view
+também possui um construtor() para recebermos algum parâmetro que seja necessário, 
+vamos utilizar e um build() que basicamente constrói o e-mail, define qual o template, se é preciso passar alguma coisa, 
+se tiver alguma regra para criar esse e-mail podemos inserir nesse build(), mas isso normalmente não é necessário. 
+
+Então, esse método view, return $this->view('view.name');, 
+vai carregar um HTML e transformá-lo no e-mail que queremos enviar. Assim, 
+vamos criar esse HTML em "resources > views" e em views vamos criar uma nova pasta de mail selecionando o botão direito do mouse nas opções "New > 
+PHP File" e no campo "File name" inserir "mail/series-created.blade.php" que vai ser o mesmo nome da classe.
+
+Em series-created.blade.php temos o componente de e-mail e vamos simplesmente chamá-lo "E-mail", 
+por enquanto. Agora em SeriesCreated, podemos ir em view.name e chamar a view mail visto que está dentro da pasta mail e .series-create. 
+
+/**
+    * Build the message.
+    *
+    * @return $this
+    */
+public function build()
+{
+    return $this->view('mail.series-created');
+}
+
+
+Pronto, já temos o e-mail configurado e em series-created.blade.php podemos informar "Uma nova série foi criada." 
+e poderíamos adicionar o link pedindo para conferir ou algo nesse sentido.
+Série criada e queremos visualizar esse e-mail antes de enviar para garantir que está tudo certo, e como o e-mail por trás possui um HTML ou um texto, pelo menos, conseguimos visualizar no navegador. 
+Então, vamos criar uma rota só para teste que vamos remover mais adiante em "routes > web.php" só para visualizar este e-mail.
+
+Em web.php vamos inserir um Route:get('/email') e teremos um function() que vai retornar a classe de SeriesCreated(), visto que quando retornamos um e-mail o Laravel já sabe que ele deve fazer é pegar a view, simples assim.
+
+Route::get('/email', function () {
+    return new \App\Mail\SeriesCreated();
+});
+
+Agora vamos subir o servidor do artisan novamente no terminal, então, php artisan serve --host=0.0.0.0. Após finalizar, vamos à aplicação e acessar a URL "http://localhost:800/email" e será exibida a mensagem "Uma nova série foi criada". 
+
+A princípio está tudo certo e dentro de series-created.blade.php podemos escrever o HTML do e-mail, mas, escrever e-mails não é uma tarefa tão simples, não é toda propriedade CSS que é aceita, às vezes um cliente de e-mail aceita uma propriedade que outro não, assim, pode ficar bonito no hotmail, mas não no gmail. 
+Então, o Laravel nos traz alguns componentes já personalizados e testados para envio de e-mail. 
+
+Se você quiser utilizar isso, vamos dar uma analisada rápida na Documentação do Laravel , nessa página já vamos entender sobre configurações, 
+mas, no momento vamos analisar como usar markdown para as views dos e-mails em "Markdown Mailables". 
+
+Quando criamos um e-mail usando markdown, além da facilidade de escrever no formato markdown que é um pouco mais simples que o HTML, 
+mas enfim, além dessa facilidade conseguimos também usar alguns componentes do próprio Laravel, como o @component('mail::message'),
+e vamos fazer exatamente isso.
+
+Em SeriesCreated ao invés de usar o método view no e-mail vamos inserir o markdown, ou seja, 
+vai identificar que esse arquivo de view que estamos criando não vai ser um HTML qualquer, vai estar no formato de markdown. 
+
+/**
+    * Build the message.
+    *
+    * @return $this
+    */
+public function build()
+{
+    return $this->markdown('mail.series-created');
+}
+}
+
+
+@component('mail::message')
+    Uma nova série foi criada.
+@endcomponent
+
+Com isso, se atualizarmos na aplicação com a URL "http://localhost:800/email" repare que está bem mais interessante, 
+a mensagem foi para o meio da tela e claro, possui alguns detalhes do Laravel como a mensagem "2022 Laravel. All rights reserved."
+que poderíamos nos preocupar com isso, mas para o nosso cenário isso é perfeito, visto que ele já cria um layout interessante para o e-mail e 
+que vai funcionar para todos os clientes, já foi melhor testado.
+
+Em series-created.blade.php podemos usar markdown, então, por exemplo, se quisermos criar uma lista vamos incluir os itens 1 e 2.
+
+    series-created.blade:
+
+@component('mail::message')
+
+# Uma nova série foi criada.
+
+- Item 1
+- Item 2
+
+@endcomponent
+
+criado uma estrutura do nosos e-mail:
+
+@component('mail::message')
+
+# {{ $nomeSerie }} criada
+
+A série {{ $nomeSerie }} com {{ $qtdTemporadas }} temporadas e {{ $episodiosPorTemporada }} episódios por temporada foi criada.
+
+Acesse aqui: 
+
+@component('mail::button', ['url' => route('seasons.index', $idSerie)])
+    Ver série
+@endcomponent
+
+@endcomponent
+
+Estamos usando várias variáveis, mas onde elas serão encontradas? 
+Podemos utilizar tanto quando fazemos com uma view, passando os dados em um colchetes em SeriesCreated no return do function build() 
+ou podemos ter as propriedades da classe de e-mail públicas, tudo que for público a view vai acessar, se for privado não. 
+
+Então podemos, ou ter as propriedades públicas ou passar no return do function build(). 
+Assim, vamos receber isso tudo e transformar em propriedades públicas, então, em public function __construct () 
+teremos uma string que vai ser o nome da série, o ID da série,a quantidade de temporadas e episódios.
+
+public function __construct(
+        public string $nomeSerie,
+        public int $idSerie,
+        public int $qtdTemporadas,
+        public int $episodiosPorTemporada,
+    )
+
+
+@component('mail::message')
+
+# {{ $nomeSerie }} criada
+
+A Série <strong>"{{ $nomeSerie }}"</strong> com <strong>"{{ $qtdTemporadas }}"</strong> Temporadas e <strong>"{{ $episodiosPorTemporada }}"</strong> Episódios <br><center><strong>Foi criada com Sucesso!</strong></center>.
+
+@component('mail::button', ['url' => route('seasons.index', $idSerie)])
+    Ver série
+@endcomponent
+
+@endcomponent
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Aprendemos a criar classes Mailable com Laravel
+Vimos como enviar e-mails utilizando Laravel
+Aprendemos a enviar múltiplos e-mails sem problemas
+Conhecemos a ferramenta mailtrap
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+TOP 02

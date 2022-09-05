@@ -1,0 +1,137 @@
+img, svg {
+    vertical-align: middle;
+    height: 20px;
+    width: 20px;
+    display: inherit;
+}
+
+nav {
+    margin-bottom: 20px;
+}
+
+.alert.alert-success {
+    display: block ruby !important;
+}
+
+h1 {
+    background: currentColor;
+    padding-bottom: 80px;
+    padding-top: 10px;
+    margin-bottom: 60px;
+}
+
+.h1-header-user {
+    display: inline-flex;
+}
+
+#id-user {
+    text-align: end;
+}
+
+.header {
+    color: white;
+    padding-left: 20px;
+    font-style: oblique;
+    margin-top: 40px;
+}
+
+.thead-tabela-series-topo {
+    background: whitesmoke;
+}
+
+.img-tabela-series {
+    width: 22px;
+    height: 22px;
+}
+
+.thead-tabela-series-footer {
+    background: whitesmoke;
+}
+
+#th-coluna-acoes-tabela-series {
+    text-align: center;
+}
+
+#td-coluna-acoes-tabela-detalhes-series-season {
+    text-align: start;
+    padding-top: 10px;
+}
+
+#td-coluna-acoes-tabela-detalhes-episodes {
+    text-align: end;
+    padding-top: 10px;
+}
+
+#td-coluna-acoes-tabela-series {
+    text-align: end;
+}
+
+#btn-destroy {
+    display: inline !important;
+}
+
+
+#btn-update {
+    display: inline !important;
+}
+
+#tabela-series_length {
+    text-align: start !important
+}
+
+#tabela-series_paginate {
+    text-align: end !important;
+}
+
+#tabela-series_filter {
+    text-align: end !important;
+
+}
+
+#tabela-series_next {
+    padding: 10px !important;
+    background: indianred !important;
+    border-radius: 100%;
+    margin: 10px;
+    color: white;
+    text-transform: uppercase;
+    text-decoration: burlywood;
+    cursor: pointer
+}
+
+#tabela-series_previous {
+    padding: 10px !important;
+    background: indianred !important;
+    border-radius: 100%;
+    margin: 10px;
+    color: white;
+    text-transform: uppercase;
+    text-decoration: burlywood;
+    cursor: pointer
+}
+
+
+.paginate_button.current {
+    color: black !important;
+    margin: 5px !important;
+}
+
+body
+{
+    margin-bottom: 100px;
+}
+
+#bg-tabela-series-episodes
+{
+    font-size: medium;
+}
+
+#checkbox-tabela-series-episodes {
+    min-width: 20px;
+    min-height: 20px;
+    margin-right: 5px;
+}
+
+.form-group {
+    padding-bottom: 10px;
+}

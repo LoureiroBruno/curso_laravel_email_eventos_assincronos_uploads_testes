@@ -25,17 +25,9 @@ class SeriesFormRequestCreate extends FormRequest
     public function rules()
     {
         return [
-            'nome' => ['required','min:3'],
-            'seasonQty'=> ['required'],
-            'episodesPerSeason' => ['required']
+            'nome' => 'required|min:4',
+            'seasonQty'=> 'required',
+            'episodesPerSeason' => 'required'
         ];
     }
-
-    // public function messages()
-    // {
-    //     return [
-    //         'nome.required' => 'O campo nome é obrigatório',
-    //         'min' => 'O campo nome requer no mínimo de :min caracteres'
-    //     ];
-    // }
 }

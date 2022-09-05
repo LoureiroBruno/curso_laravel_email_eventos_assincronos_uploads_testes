@@ -24,7 +24,7 @@ Route::get('/dashboard', function () {
 
 Route::get('/email', function () {
     return new \App\Mail\SeriesCreated(
-        'Série de teste',
+        'Sintonia',
         1,
         5,
         10

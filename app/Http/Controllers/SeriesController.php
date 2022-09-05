@@ -6,8 +6,11 @@ use App\Http\Middleware\Autenticador;
 use App\Http\Requests\SeriesFormRequestCreate;
 use App\Http\Requests\SeriesFormRequestUpdate;
 use App\Models\Series;
+use App\Models\User;
 use App\Repositories\EloquentSeriesRepository;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\SeriesCreated;
 
 class SeriesController extends Controller
 {
@@ -56,8 +59,29 @@ class SeriesController extends Controller
      */
     public function store(SeriesFormRequestCreate $request)
     {
+        // dd($request->seasonQty);
         /**injeção de dependência - retornar o objeto SeriesRepository criado */
         $serie = $this->repository->add($request);
+
+       
+
+        $userList = User::all();
+        foreach ($userList as $user) {
+            /** envio de email */
+            $email = new SeriesCreated(
+                $serie->nome,
+                $serie->id,
+                $request->seasonQty,
+                $request->episodesPerSeason
+            );
+            
+            /** varios usuarios */
+            Mail::to($user)->send($email);
+            sleep(2);
+        }
+        
+        /** unico usuário*/
+        // Mail::to($request->user())->send($email);
 
         return to_route('series.index')->with("success", "Cadastrado a série: '{$serie->nome}' com sucesso!");
     }

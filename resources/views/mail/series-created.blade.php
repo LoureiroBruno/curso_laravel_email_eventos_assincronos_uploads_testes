@@ -1,11 +1,12 @@
 @component('mail::message')
 
-# {{ $nomeSerie }} criada
+**Adicionado Nova Série**:
+# <center>{{ $nome }}</center>
 
-A Série <strong>"{{ $nomeSerie }}"</strong> com <strong>"{{ $qtdTemporadas }}"</strong> Temporadas e <strong>"{{ $episodiosPorTemporada }}"</strong> Episódios <br><center><strong>Foi criada com Sucesso!</strong></center>.
+- A Série <strong>{{ $nome }}</strong> possui <strong>{{ $seasonsQty }}</strong> Temporadas e <strong>{{ $episodesPerSeason }}</strong> Episódios
 
-@component('mail::button', ['url' => route('seasons.index', $idSerie)])
-    Ver série
+@component('mail::button', ['url' => route('seasons.index', $id)])
+    Visualizar
 @endcomponent
 
 @endcomponent

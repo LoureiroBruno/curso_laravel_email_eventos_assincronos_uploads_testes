@@ -10,7 +10,7 @@ nav {
 }
 
 .alert.alert-success {
-    display: block ruby !important;
+    display: flex !important;
 }
 
 h1 {

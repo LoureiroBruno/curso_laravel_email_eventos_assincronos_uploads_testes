@@ -132,6 +132,97 @@ A Série <strong>"{{ $nomeSerie }}"</strong> com <strong>"{{ $qtdTemporadas }}"<
 
 @endcomponent
 
+
+vimos também que para acessar informações na view de e-mail, temos duas opções. A primeira seria em SeriesCreated, no return() passar como qualquer outra view, por exemplo, 'nomeSerie' => '' e passar o nome da série que recebemos.
+
+    Exemplo da primeira opção:
+
+public function build()
+    {
+        return $this->markdown('mail.series-created'[
+                'nomeSerie' => ''
+                ]);
+    }
+
+A segunda opção é fazer como já está sendo usado no exemplo
+
+dentro do controller SeriesController no metod store, uso da facade mail pra realizar o envio do email
+
+$email = new SeriesCreated(
+        $serie->nome,
+        $serie->id,
+        $request->seasonsQty,
+        $request->episodesPerSeason,
+);
+Mail::to($request->user())->send($email);
+
+Nessa classe Mail chamamos o método to() e informar para quem queremos enviar o e-mail, 
+podemos enviar agora para o usuário logado, temos algumas formas de pegar o usuário logado, que já vimos, 
+por exemplo, auth::user(): Mail::to(Auth::user())
+
+
+Teoricamente, é isso que precisamos para enviar uma série por e-mail, só que quando vamos enviar um e-mail usando PHP, 
+precisamos enviar de alguma forma. Pode ser utilizando a função mail() do PHP, o que ela faz é chamar um binário que temos que ter 
+no sistema operacional, chamado sendmail, mas precisaríamos configurar no próprio servidor e computador.
+
+ao invés de usar o sendmail é muito comum chamar algum servidor SMTP 
+assim, podemos usar a nossa conta do gmail para enviar esse e-mail. 
+Basta usar as credenciais SMTP que você consegue buscar no gmail e configurar. 
+
+ao usar o SMTP e podemos passar as informações, o servidor SMTP, qual a porta, se vai usar criptografia, usuário e senha, enfim, 
+podemos passar todas essas informações diretamente em SMTP ou, o que é mais correto, é usar as variáveis de ambiente. 
+
+mas para ambiente de teste, pode ser ultilizado mailtrap
+criar uma conta caso ainda não tenha, logado temos uma caixa de e-mail, em "My Inbox". Esse mailtrap é um serviço que intercepta 
+todos os e-mails que enviamos, então, se configurarmos o servidor como sendo mailtrap e tentar enviar para o e-mail pessoal, 
+esse e-mail não vai ser enviado e só vão cair nessa caixa. 
+
+Então, isso é fenomenal para o ambiente de desenvolvimento e ainda já vemos como configurar o Laravel em um cenário real, 
+visto que em ambiente de produção também utilizaríamos um SMPT para um servidor mais complexo ou um gmail, por exemplo. 
+
+Exemplo de configuração de usuário do mailtrap:
+
+MAIL_MAILER=smtp
+MAIL_HOST=smtp.mailtrap.io
+MAIL_PORT=2525
+MAIL_USERNAME=a61b0f38eef3a
+MAIL_PASSWORD=5d7013d8c3e134
+MAIL_ENCRYPTION=tls
+
+as se quisermos ter um padrão, em .env que inserimos que todos os e-mails enviados pelo sistema são de "contato@example.com", então, MAIL_FROM_ADDRESS="contato@example.com" vai ser utilizado e o nome do remetente, de quem enviou que podemos colocar "Sistema de séries", mas ele está pegando o APP_NAME lá na linha 1, que no caso está sendo chamado de Laravel, vamos alterar para "Sistema de séries".
+
+MAIL_FROM_ADDRESS="contato@example.com"
+MAIL_FROM_NAME="APP_NAME"
+
+como enviar a mesma estrutura de email para varios usuários, Basta
+
+
+$userList = User::all();
+/** varios usuarios */
+foreach ($userList as $user) {
+    Mail::to($user)->send($email);
+}
+
+porem irá apresentar error de repetição de envio de mail de usuarios, para correção
+
+$userList = User::all();
+foreach ($userList as $user) {
+    /** envio de email */
+    $email = new SeriesCreated(
+        $serie->nome,
+        $serie->id,
+        $request->seasonQty,
+        $request->episodesPerSeason
+    );
+    
+    /** varios usuarios */
+    Mail::to($user)->send($email);
+}
+
+por uso do mailtrap gratuito, possui um limite de 5 envio por a cada 10 segundos
+Expected response code "354" but got code "550", with message "550 5.7.0 Requested action not taken: too many emails per second".
+"solução" sleep(2)
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Aprendemos a criar classes Mailable com Laravel
 Vimos como enviar e-mails utilizando Laravel

@@ -231,3 +231,61 @@ Conhecemos a ferramenta mailtrap
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 TOP 02
+
+No capítulo anterior, aprendemos como enviar e-mails utilizando o Laravel, mas, com isso, gerou um problema de performance, dado que estamos fazendo o usuário 
+esperar que o e-mail seja enviado e enviar e-mails tende a ser uma tarefa demorada, principalmente quando está sendo enviado seis e-mails e não apenas um. 
+Mesmo sendo apenas um e-mail, notamos um problema de performance e conforme o número de e-mails enviados aumenta o problema também aumenta. 
+
+Se queremos continuar enviando os e-mails individualmente e mesmo enviando apenas um é uma tarefa demorada, como podemos resolver o processamento de uma tarefa 
+demorada sem prender o usuário? 
+Podemos transformar isso em algo assíncrono, o conceito que vamos usar é o de mensageria
+
+Mas, basicamente o que queremos fazer é ao invés de enviar um e-mail, queremos informar para o Laravel colocar esse e-mail em uma fila para depois dar uma 
+olhada nessa fila e analisar quais e-mails tenho que enviar e enviar depois, sem ser nessa requisição, ou seja, enquanto o usuário está esperando.
+Basicamente é esse o conceito de mensageria e como vamos implementar.
+
+"Queueing Mail", ou seja, adicionando e enfileirando o e-mail. 
+
+Então, ao invés de chamar o método send() chamar o método queue(), no código da documentação tem alguns detalhes de e-mail além do from que aprendemos sobre, 
+temos o cc, bcc para adicionar cópia, cópia oculta, poderíamos trabalhar com anexo e entre outras funcionalidades. 
+Mas o que vamos fazer é ao invés de enviar, vamos enfileirar esse e-mail.
+
+Mail::to($user)->queue($email);
+
+na verdade, ele está adicionando esse e-mail em uma fila que vai ser processada, só que o Laravel está configurado para processar o que entra na fila de 
+forma síncrona.
+Na prática, não mudou nada, é como se estivéssemos chamando o send(), a diferença é que agora o Laravel está tendo que fazer uma volta maior, já que está 
+adicionando em uma fila e um outro código pega isso de uma fila e já processa, de forma síncrona e o que queremos é assíncrona.
+Em "config > queue" vamos dar uma analisada nas configurações
+
+repare que na linha 16 temos uma queue_connection, é como vamos usar para lidar com filas, então, podemos informar qual a conexão que vamos utilizar e 
+em queue_connection o padrão é sync, ou seja, o Laravel vai ficar verificando se alguma tarefa foi adicionada na fila, já é processado de forma síncrona.
+
+As possibilidades são: sync, database para utilizar o banco de dados como se fosse o sistema de mensageria, o beanstalkd que é uma ferramenta externa, 
+o sqs que é o sistema de mensageria da Amazon, o redis que é um banco de dados de chave valor bem mais rápido, enfim. O que vamos usar no projeto por 
+simplicidade é o database.
+
+Em um cenário real, se estivesse na AWS, utilizaríamos o sqs, podemos usar o Kafka ou o RabbitMQ, então, configurariam e até usaríamos pacotes externos, 
+para o cenário o database vai ser o suficiente. Então, no arquivo .env que é onde temos as configurações, o queue_connection é o sync, 
+que vamos alterar para "database".
+
+então alterar no .env
+de QUEUE_CONNECTION=sync para QUEUE_CONNECTION=database
+quando for executado o queue() ele vai adicionar essa informação em uma fila, então ele pega o e-mail e cria um registro em uma tabela de tarefas para 
+processar e essas tarefas serão lidas depois
+
+em seguida, selecionar o botão "Adicionar" novamente e temos um erro com a mensagem: "SQLSTATE[HY000]: General error: 1 no such table:jobs", 
+já que a tabela para adicionar esses jobs (tarefas) não existe.
+Nós poderíamos criar uma migration com todos os campos que aparecem abaixo do erro, como: "queue", "attempts", "reserved_at", "available_at", "created_at", 
+"payload" e seus respectivos valores.
+
+Mas,já temos alguns comandos para ajudar com isso, como o queue:table ele vai criar a migration que cria a tabela de jobs.
+php artisan queue:table
+
+Esse comando vai gerar uma migration, perceba no projeto do lado esquerdo da tela que foi criado um arquivo create_jobs_table.php, 
+selecionando ele note que temos uma migration criada com tudo configurado da forma como o Laravel sabe trabalhar e no terminal vamos 
+rodar o comando php artisan migrate.
+
+vamos selecionar o botão "Adicionar" e repare que a resposta foi bem rápida. 
+Só que esses e-mails existem e podemos visualizar acessando o banco de dados para verificar, em "database > database.sqlite" e agora que o banco de dados 
+está preenchido, a tabela de jobs já possui essa tarefa, como podemos fazer para processar?.

@@ -75,9 +75,12 @@ class SeriesController extends Controller
                 $request->episodesPerSeason
             );
             
-            /** varios usuarios */
-            Mail::to($user)->send($email);
-            sleep(2);
+            /** varios usuarios de forma síncrona*/
+            // Mail::to($user)->send($email);
+            // sleep(2);
+
+            /** varios usuarios de forma assíncrona*/
+            Mail::to($user)->queue($email);
         }
         
         /** unico usuário*/

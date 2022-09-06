@@ -59,38 +59,7 @@ class SeriesController extends Controller
      */
     public function store(SeriesFormRequestCreate $request)
     {
-        // dd($request->seasonQty);
-        /**injeção de dependência - retornar o objeto SeriesRepository criado */
         $serie = $this->repository->add($request);
-
-       
-
-        $userList = User::all();
-        // foreach ($userList as $user) {
-        foreach ($userList as $index => $user) {
-            /** envio de email */
-            $email = new SeriesCreated(
-                $serie->nome,
-                $serie->id,
-                $request->seasonQty,
-                $request->episodesPerSeason
-            );
-            
-            /** varios usuarios de forma síncrona*/
-            // Mail::to($user)->send($email);
-            // sleep(2);
-
-            /** varios usuarios de forma assíncrona*/
-            // Mail::to($user)->queue($email);
-
-            /** varios usuarios de forma assíncrona*/
-            /** com uso do later para agendar a execute */
-            $when = now()->addSeconds($index * 5);
-            Mail::to($user)->later($when, $email);
-        }
-        
-        /** unico usuário*/
-        // Mail::to($request->user())->send($email);
 
         return to_route('series.index')->with("success", "Cadastrado a série: '{$serie->nome}' com sucesso!");
     }

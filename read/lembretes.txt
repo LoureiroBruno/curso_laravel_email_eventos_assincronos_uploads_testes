@@ -446,7 +446,8 @@ agregado a esta nova execução, no lado do consumo
 # php artisan queue:work --tries=2. 
 com apenas o número de tentaivas sem a espera de qunado executar novamente na tratativa de error.
 
-----------------------------------------------------------------
++++
+
 public function store(SeriesFormRequestCreate $request)
 {
     // dd($request->seasonQty);
@@ -482,7 +483,9 @@ public function store(SeriesFormRequestCreate $request)
 
     return to_route('series.index')->with("success", "Cadastrado a série: '{$serie->nome}' com sucesso!");
 }
-----------------------------------------------------------------   
+
++++
+
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Aprendemos a adiar o envio do e-mail
 Vimos como configurar as filas de processos no banco de dados
@@ -491,3 +494,159 @@ Entendemos como definir o horário de execução de um processo
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
 TOP 03
+
+public function store(SeriesFormRequestCreate $request)
+{
+    // dd($request->seasonQty);
+    /**injeção de dependência - retornar o objeto SeriesRepository criado */
+    $serie = $this->repository->add($request);
+
+    
+
+    $userList = User::all();
+    // foreach ($userList as $user) {
+    foreach ($userList as $index => $user) {
+        /** envio de email */
+        $email = new SeriesCreated(
+            $serie->nome,
+            $serie->id,
+            $request->seasonQty,
+            $request->episodesPerSeason
+        );
+        
+        /** varios usuarios de forma síncrona*/
+        // Mail::to($user)->send($email);
+        // sleep(2);
+
+        /** varios usuarios de forma assíncrona*/
+        // Mail::to($user)->queue($email);
+
+        /** varios usuarios de forma assíncrona*/
+        /** com uso do later para agendar a execute */
+        $when = now()->addSeconds($index * 5);
+        Mail::to($user)->later($when, $email);
+    }
+    
+    /** unico usuário*/
+    // Mail::to($request->user())->send($email);
+
+    return to_route('series.index')->with("success", "Cadastrado a série: '{$serie->nome}' com sucesso!");
+}
+
+mesmo metodo sem comentários - método enxuto
+
+public function store(SeriesFormRequestCreate $request)
+{
+    $serie = $this->repository->add($request);
+
+    $userList = User::all();
+    foreach ($userList as $index => $user) {
+        /** envio de email */
+        $email = new SeriesCreated(
+            $serie->nome,
+            $serie->id,
+            $request->seasonQty,
+            $request->episodesPerSeason
+        );
+        $when = now()->addSeconds($index * 5);
+        Mail::to($user)->later($when, $email);
+    }
+
+    return to_route('series.index')->with("success", "Cadastrado a série: '{$serie->nome}' com sucesso!");
+}
+
+-------------------------------------------------------------------------------------------------------------
+guardar
+-------------------------------------------------------------------------------------------------------------
+
+então a idéia e desvincular a atribuição do método store dentro do controller respectivo, as filas de trabalho de envio de emails,  Além de armazenar uma 
+série usando o repositório ou dependência já bem configurada, também está notificando todos os usuários.
+
+public function store(SeriesFormRequestCreate $request)
+{
+    $serie = $this->repository->add($request);
+
+    $userList = User::all();
+    foreach ($userList as $index => $user) {
+        /** envio de email */
+        $email = new SeriesCreated(
+            $serie->nome,
+            $serie->id,
+            $request->seasonQty,
+            $request->episodesPerSeason
+        );
+        $when = now()->addSeconds($index * 5);
+        Mail::to($user)->later($when, $email);
+    }
+
+    return to_route('series.index')->with("success", "Cadastrado a série: '{$serie->nome}' com sucesso!");
+}
+
+Para quem já realizou o curso de SOLID, sabe que deveríamos evitar ter múltiplas responsabilidades e o ideal é que a classe ou método tenha apenas um motivo 
+para ser alterado. Então nessa parte do código que estamos comunicando o usuário se modificarmos a forma de notificar, como vamos enviar o e-mail, por exemplo, 
+adicionando mais delay ou algo nesse sentido, vamos precisar alterar essa classe. Se precisar adicionar em outro repositório, também.
+Assim, podemos começar a melhorar esse código. 
+A criação da série, $serie = $this->repository->add($request); vai permanecer no arquivo SeriesController, mas, amos informar que uma série foi criada, então, 
+alguém pode executar alguma ação com essa série criada. Basicamente, queremos gerar um evento e para gerar esse evento e alguma coisa acontecer, 
+precisamos ter alguém aguardando ou ouvindo esse evento. Então, vamos criar um event listener. 
+
+mas antes, interromper o worker e rodar o 
+# php artisan queue:listen --tries=2 
+para não precisar ter que ficar encerrando o worker e subindo novamente
+
+# php artisan make:listener EmailUsersAboutSeriesCreated
+é a classe que vamos criada que vai ser o ouvinte de evento, isto é, vai receber o evento e executar alguma coisa.
+
+Após criar o event listener e ir para a classe criada no projeto, em "app > Listeners > EmailUsersAboutSeriesCreated", 
+quando esse listener for ser executado vai receber um evento, que ainda vamos criar, mas, sabemos que esse evento vai precisar ter as informações necessárias para enviar o e-mail.
+
+Assim, vamos voltar para o SeriesController e recortar o código de notificação do usuário e colar no arquivo EmailUsersAboutSeriesCreated dentro de public function handle()
+
+/**
+* Handle the event.
+*
+* @param  object  $event
+* @return void
+*/
+public function handle($event)
+{
+$userList = User::all();
+    foreach ($userList as $index => $user) {
+        /** envio de email */
+        $email = new SeriesCreated(
+            $event->seriesName,
+            $event->seriesId,
+            $event->seriesSeasonsQty,
+            $event->seriesEpisodesPerSeason
+        );
+        $when = now()->addSeconds($index * 5);
+        Mail::to($user)->later($when, $email);
+    }
+}
+
+Esse evento que vamos receber que ainda não criamos, vai ter acessível todas as propriedades - seriesName, seriesId, seriesSeasonsQty e seriesEpisodesPerSeason - 
+e a partir delas vamos conseguir criar o e-mail, e desse e-mail criado obter o envio. Por enquanto não estamos enviando e sim adicionando a uma fila. 
+
+** Vamos recapitular o que estamos implementando na prática antes de criar o evento. 
+Em SeriesController temos o método store() que vai armazenar uma série, ao criar uma série o que estávamos fazendo antes é chamando o repositório, isso é uma responsabilidade e envie os e-mails, 
+outra responsabilidade. 
+Imagine que mais para frente queremos executar um log quando essa série for criada, 
+e além de e-mail enviar um SMS ou uma mensagem no Slack, 
+ficaríamos adicionando código no método e isso não é uma boa prática.
+
+** entao o mais corretto é
+a fazer é desacoplar a ideia de criar uma série com qualquer outra coisa que resulte disso. Criar uma série é o que o método public function store(SeriesFormRequest $request) tem que fazer, 
+por isso está chamando o repositório. 
+Mas se outra coisa precisa acontecer além da criação, vamos remover desse método.
+Para isso, vamos lidar com o conceito de eventos, é parecido com o que aprendemos de observable no treinamento de design patterns, o que teremos é uma classe que vai ser executada quando determinado
+evento acontecer e um evento possui os dados, assim, esse evento tem as informações do evento que aconteceu. 
+O evento que vamos criar é de uma nova série, então, esse evento vai possuir o nome da série, o ID da série, a quantidade de temporadas e quantidade de episódios por temporada. A partir disso, 
+podemos adicionar os e-mails na fila ou qualquer poutro evento apartir dos dados obtidos desse ouvidor EmailusersAboutSeriesCreated para serem processados depois, com outro exemplo um log.
+
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Aprendemos a trabalhar com eventos
+Entendemos as vantagens de separar nosso código em event listeners
+Vimos como trabalhar com eventos de forma síncrona e assíncrona
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

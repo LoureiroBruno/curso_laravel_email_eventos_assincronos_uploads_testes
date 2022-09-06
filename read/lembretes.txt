@@ -643,6 +643,146 @@ evento acontecer e um evento possui os dados, assim, esse evento tem as informa�
 O evento que vamos criar é de uma nova série, então, esse evento vai possuir o nome da série, o ID da série, a quantidade de temporadas e quantidade de episódios por temporada. A partir disso, 
 podemos adicionar os e-mails na fila ou qualquer poutro evento apartir dos dados obtidos desse ouvidor EmailusersAboutSeriesCreated para serem processados depois, com outro exemplo um log.
 
+** já temos o listener e agora vamos criar o evento que iremos utilizar
+# php artisan make:event SeriesCreated
+
+No projeto em "app > Events > SeriesCreated" vamos ver o que temos nesse evento, a princípio não temos nada, podemos usar o broadcastOn() para ter canais de eventos, mas não vamos precisar 
+disso e implementar de uma maneira mais simples. 
+No construtor() vamos receber os parâmetros que contém os dados desse evento, repare que no listener EmailUsersAboutSeriesCreated esperamos que existam esses dados - seriesName, seriesId, 
+seriesSeasonsQty e seriesEpisodesPerSeason.
+
+/**
+    * Handle the event.
+    *
+    * @param  object  $event
+    * @return void
+    */
+public function handle($event)
+{
+    $userList = User::all();
+    foreach ($userList as $index => $user) {
+        /** envio de email */
+        $email = new SeriesCreated(
+            $event->seriesName,
+            $event->seriesId,
+            $event->seriesSeasonsQty,
+            $event->seriesEpisodesPerSeason
+        );
+        $when = now()->addSeconds($index * 5);
+        Mail::to($user)->later($when, $email);
+    }
+}
+
+Só que ao invés de um object (e-mail) sabemos que esse evento é um SeriesCreated
+
+use App\Events\SeriesCreated as SeriesCreatedEvent;
+use App\Mail\SeriesCreated;
+
+/**
+    * Handle the event.
+    *
+    * @param  object  $event
+    * @return void
+    */
+public function handle(SeriesCreatedEvent $event)
+{
+    $userList = User::all();
+    foreach ($userList as $index => $user) {
+        /** envio de email */
+        $email = new SeriesCreated(
+            $event->seriesName,
+            $event->seriesId,
+            $event->seriesSeasonsQty,
+            $event->seriesEpisodesPerSeason
+        );
+        $when = now()->addSeconds($index * 5);
+        Mail::to($user)->later($when, $email);
+    }
+}
+
+e add no Events/SeriesCreated
+
+/**
+    * Create a new event instance.
+    *
+    * @return void
+    */
+public function __construct(
+    public readonly string $seriesName,
+    public readonly int $seriesId,
+    public readonly int $seriesSeasonsQty,
+    public readonly int $seriesEpisodesPerSeason,
+)
+{
+    //
+}
+
+
+Recapitulando, voltando para o listener o método handle() é executado quando um evento acontece e recebemos esse evento por parâmetro, 
+o evento precisa possuir alguns dados, então, todas as informações do evento estamos adicionando no construtor de SeriesCreated. 
+O construtor do evento SeriesCreated espera todos os dados que precisamos, que vão ser lidos no listener, esses dados estão como public readonly que significa que são acessíveis para qualquer pessoa, 
+mas só podem ser escritos uma vez. Então, após a construção esse objeto não pode alterar mais as propriedades.
+
+O evento foi criado e agora para emitir esse evento vamos para SeriesController no método store() e pegar o evento Series Created e chamar o dispatch(), que envia o evento para o Laravel. 
+Estamos disparando o evento "\App\Events\SeriesCreated" e esperamos que o listener seja executado, teoricamente, o e-mail vai ser enviado. 
+O dispatch()recebe por parâmetro tudo que o SeriesCreated receberia, então, para facilitar podemos adicionar o $seriesCreatedEvent = new \App\Events\SeriesCreated() que espera o nome da série,
+o ID, a quantidade de temporadas e número de episódios por temporada, teoricamente temos todos os dados. 
+
+Novamente, se não quisermos precisar da linha event($seriesCreatedEvent) podemos remover, apagar também o $seriesCreatedEvent = new e simplesmente chamar o dispatch() com os mesmos parâmetros.
+
+public function store(SeriesFormRequestCreate $request)
+{
+    $serie = $this->repository->add($request);
+    /** listener */
+    \App\Events\SeriesCreated::dispatch(
+        $serie->nome,
+        $serie->id,
+        $request->seasonsQty,
+        $request->episodesPerSeason,
+    );
+
+    return to_route('series.index')->with("success", "Cadastrado a série: '{$serie->nome}' com sucesso!");
+}
+
+
+Agora sim, temos um objeto sendo dispatch, ou seja, enviado e o listener está pronto para ser executado também. No mailtrap vamos limpar a caixa de e-mail no ícone de carta com um "X" 
+na parte superior e na aplicação vamos atualizar e adicionar uma série chamada "Teste", com uma temporada e um episódio, agora só selecionar o botão "Adicionar".
+
+Aparece a mensagem que a série "teste" foi adicionada com sucesso, se formos no mailtrap percebemos que os e-mails não estão sendo enviados. Vamos ver o que aconteceu no work, se tivesse 
+algo para ser processado seria mostrado, mas repare que no terminal ele não está tentando processar nada. 
+
+Isso está acontecendo porque fizemos o dispatch(), mas o código do listener não foi executado, pois, como o Laravel vai saber que queremos executar um método da classe EmailUsersAboutSeriesCreated 
+quando o evento SeriesCreated do arquivo SeriesController for gerado? Ele não sabe, então precisamos gerar essa configuração.
+
+
+** Antes de implementar mais coisas, vamos recapitular o que já fizemos. 
+Nós agora estamos desacoplando o SeriesController de qualquer outra tarefa que precisa acontecer quando uma série for criada, então, estamos criando a série e informando, apenas isso. 
+Se alguma outra tarefa precisa acontecer é outro código que vai executar essa ação, como, notificar todos os usuários que a série foi criada, se quiséssemos realizar um log ou alguma ação nesse sentido.
+momento temos o evento SeriesCreated que está sendo gerado quando criamos a série e um listener no arquivo EmailUsersAboutSeriesCreated pronto para ser executado com um método handle(). 
+Mas, precisamos informar para o Laravel que sempre que o evento SeriesCreated for criado é para executar o listener. 
+
+Para isso, vamos utilizar um service provider que o próprio Laravel possui por padrão em "app > Providers > EventServiceProvider", o EventServiceProvider contém uma propriedade chamada listen
+
+/**
+* The event to listener mappings for the application.
+*
+* @var array<class-string, array<int, class-string>>
+*/
+protected $listen = [
+    Registered::class => [
+        SendEmailVerificationNotification::class,
+    ],
+
+    SeriesCreated::class => [
+        EmailUsersAboutSeriesCreated::class,
+    ],
+];
+
+Então, vamos adicionar no listen o mapeamento de SeriesCreated que é o evento, importado do namespace correto que vai possuir apenas um listener, por enquanto, 
+o EmailUsersAboutSeriesCreated. Com isso, o Laravel vai saber que sempre que a série for criada, o listener EmailUsersAboutSeriesCreated vai ser executado.
+
+
+
 
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

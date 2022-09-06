@@ -60,6 +60,13 @@ class SeriesController extends Controller
     public function store(SeriesFormRequestCreate $request)
     {
         $serie = $this->repository->add($request);
+        /** listener */
+        \App\Events\SeriesCreated::dispatch(
+            $serie->nome,
+            $serie->id,
+            $request->seasonQty,
+            $request->episodesPerSeason
+        );
 
         return to_route('series.index')->with("success", "Cadastrado a série: '{$serie->nome}' com sucesso!");
     }

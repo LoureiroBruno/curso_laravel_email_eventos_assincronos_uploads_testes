@@ -1,6 +1,6 @@
 @component('mail::message')
 
-**Adicionado Nova Série**:
+**Adicionado a nova série**:
 # <center>{{ $nome }}</center>
 
 - A Série <strong>{{ $nome }}</strong> possui <strong>{{ $seasonsQty }}</strong> Temporadas e <strong>{{ $episodesPerSeason }}</strong> Episódios

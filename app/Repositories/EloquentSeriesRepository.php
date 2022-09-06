@@ -14,6 +14,7 @@ class EloquentSeriesRepository implements SeriesRepository
     {
         return DB::transaction(function () use ($request) {
        
+            $request['nome'] = ucwords(strtolower($request['nome'])); 
             $serie = Series::create($request->all());
 
             $seasons = [];

@@ -284,8 +284,210 @@ php artisan queue:table
 
 Esse comando vai gerar uma migration, perceba no projeto do lado esquerdo da tela que foi criado um arquivo create_jobs_table.php, 
 selecionando ele note que temos uma migration criada com tudo configurado da forma como o Laravel sabe trabalhar e no terminal vamos 
-rodar o comando php artisan migrate.
+rodar o comando 
+# php artisan migrate.
 
 vamos selecionar o botão "Adicionar" e repare que a resposta foi bem rápida. 
 Só que esses e-mails existem e podemos visualizar acessando o banco de dados para verificar, em "database > database.sqlite" e agora que o banco de dados 
 está preenchido, a tabela de jobs já possui essa tarefa, como podemos fazer para processar?.
+
+Então, a série foi adicionada e nenhum e-mail foi enviado ainda, no mailtrap temos o inbox vazio. 
+Então, queremos verificar se os jobs foram incluídos em algum lugar, ou seja, se estão prontos para serem processados e ver como processá-los. 
+poderíamos verificar essas tarefas (jobs) no banco de dados, mas vamos abrir um novo terminal e rodar o comando 
+# php artisan tinker
+que abre um terminal interativo parecido com o do "php -a" só que nesse ele já carrega o Laravel e inicializa a aplicação, 
+ou seja, temos acesso a tudo que teríamos acesso no controller, por exemplo, e isso nos facilita bastante.
+
+Exemplificando, podemos efetuar um select no terminal usando a facade de banco de dados, que vai retornar todos os registros da tabela de jobs.
+
+DB::select('select * from jobs;');
+Então, temos nesse select as seis tarefas de envio de e-mail, assim, uma tarefa tem o ID, em queue qual a fila e o Laravel consegue trabalhar com 
+várias filas e no payload temos algumas informações como o ID do job, que é a tarefa que vai ser executada, o display name que é o nome da tarefa 
+e a queue exatamente o que vai ser executado, temos o comando que vai ser rodado para enviar um e-mail na fila. Temos todas as informações.
+
+Só um detalhe, dentro do tinker podemos acessar qualquer código mesmo, não somente o DB, por exemplo, se quisermos pegar todos os usuários, \App\Models\User::all();, 
+conseguimos acessar as models. 
+
+Mas agora vamos sair do tinker usando o comando quit no terminal e limpar a tela com o clear e analisar como podemos processar esses e-mails. 
+Então, se no terminal rodarmos php artisan temos duas formas: uma delas é o queue:listen e a outra o queue:work, 
+ambas são semelhantes, 
+mas, 
+por regra, em produção, utilizamos o queue:work, que pega todo o código Laravel e insere em memória, inicia a aplicação uma única vez e fica ouvindo todas as 
+tarefas que vão entrando na fila, ou seja, 
+se em algum momento for alterado o código e gerar uma tarefa esse work que vai estar rodando, não pega o código atualizado, então, em tempo de desenvolvimento 
+é comum usar o listen. 
+
+Em desenvolvimento usamos o queue:listen visto que sempre que chega uma nova tarefa o Laravel é inicializado e o queue:work é usado em produção 
+por ser mais rápido, ele inicializa o Laravel uma vez só. Por estarmos habituado vou usar sempre o work.
+
+No terminal vamos rodar o 
+# php artisan queue:work 
+e, com isso, vai começar a processar os jobs, está enviando e falhou no sexto, o motivo já sabemos, 
+o mailtrap tem o limite de cinco e-mails a cada dez segundos.
+
+Então, para resolver esse problema vamos conferir e garantir que os cinco e-mails foram enviados no mailtrap, foram enviados e isso significa que as tarefas 
+estão sendo processadas, 
+logo, os e-mails estão sendo enviados. Agora, vamos interromper o work no terminal e revisar.
+
+quando trabalhamos com o conceito de mensageria ou filas de mensagens, temos um produtor de mensagem e um consumidor.
+O produtor, no caso, é o próprio sistema web, ele está enviando uma mensagem adicionando algo na fila para ser processado depois e temos um processo 
+consumidor que vai ser inicializado com o queue:work, ou seja, são dois processos separados, o servidor web está em um terminal e o consumidor (worker de filas)
+está em outro.
+
+Revisado esse conceito, vamos analisar o que aconteceu e encontrar o job que falhou. Vamos abrir o tinker, 
+# php artisan tinker 
+e executar novamente o 
+# DB::select('select * from jobs;'); 
+a tabela de jobs retorna vazia, então, para garantir que vamos encontrar o job que falhou, podemos visualizar na tabela de failedjobs, 
+temos essa tabela que armazena todas as tarefas que não ocorreram com sucesso.
+DB::select('select * from failed_jobs;');
+listando as tarefas que não foi executada com sucesso.
+
+Se quisermos tentar executar novamente esse job, vamos ter que sair do tinker usando o comando quit, rodar o php artisan para ver a lista de comandos e em queue
+temos um retry que tenta rodar alguma tarefa novamente. Só que o queue:retry espera alguns parâmetros, no terminal vamos rodar o comando 
+# php artisan queue:retry --help 
+e um desses parâmetros é o "id" do job que queremos tentar novamente. 
+
+Se quisermos todos os jobs que falharam, podemos passar ao invés de um "id" o parâmetro all, então, ficaria 
+# php artisan queue:retry "all". 
+Mas queremos apenas um job, podemos acessar o banco de dados e copiar o id do job ou simplesmente rodar o comando 
+# php artisan queue:failed 
+que já nos mostra os jobs que falharam e copiar o "ID" que aparece na tabela para fazer o retry.
+
+# php artisan queue:retry 895d14e0-dc78-450c-bf89-b281bf9f98fc
+
+vamos tentar o retry desse job selecionando o "enter" e repare que não é processado, ele adiciona novamente esse job na fila já que temos um worker que 
+está processando isso tudo, vamos subir esse processo de novo, php artisan queue:work
+
+criar uma verficação em caso de falha
+
+Qual a diferença entre os comandos queue:listen e queue:work?
+Quando executamos o comando 
+# php artisan queue:work 
+nossa aplicação Laravel é carregada em memória e fica rodando “para sempre” esperando novos processos serem adicionados à fila. 
+Sempre que alteramos o código devemos interromper o comando e rodá-lo de novo, ou executar 
+# php artisan queue:restart 
+para reiniciar o worker. 
+Já o 
+# php artisan queue:listen 
+recarrega a aplicação a cada processo da fila que for processar, o que é menos eficiente. 
+Normalmente usamos listen em desenvolvimento e work em produção.
+
+vimos como buscar quais jobs falharam, tanto dentro do tinker quanto rodando o queue:failed e aprendemos como tentar novamente as tarefas que falharam, 
+após a análise. 
+no caso:
+# php artisan queue:retry "all"
+# php artisan queue:worker
+# php artisan serve
+
+Normalmente essa tabela de jobs ou outros mecanismos para encontrar as tarefas que falharam deve ser utilizada para identificar um problema desconhecido 
+e corrigir no código. 
+
+nosso cenário é um problema conhecido, então não devemos deixar ele cair nessa failed jobs precisamos implementar algum mecanismo para corrigir isso
+
+podemos utilizar o parâmetro tries, por exemplo, igual a dois, isso significa que vamos tentar duas vezes antes de adicionar esse job na tabela de 
+tarefas que falharam. 
+Então, estamos tentando enviar um e-mail, deu tudo certo? Sim, logo vamos para o próximo, senão, tente novamente e se falhar de novo, aí sim, adicione na 
+tabela de tarefas que falharam
+
+Contudo, se tentarmos duas vezes na mesma hora a probabilidade dele falhar de novo é bem grande, assim, vamos adicionar um delay (em português, atraso) 
+entre uma tentativa e outra. Para isso, é preciso usar o parâmetro delay e no caso será dez segundos.
+
+# php artisan queue:work --tries=2 --delay=10
+
+Esses parâmetros conseguimos visualizar executando o comando php artisan queue:work --help, note que temos o delay que é o número de segundos para atrasar os 
+jobs que falharam e o tries que informa o número de tentativas que vai ser executado até enviar para a tabela de tarefas falhadas. 
+
+Vamos inicializar esse worker e não existe nenhum job para processar, então, vamos voltar para a aplicação, remover a série "Outra" clicando no botão "X" 
+e selecionar o botão "Adicionar" para inserir uma nova série chamada "Outra" com uma temporada, um episódio e novamente clicar no botão "Adicionar".
+
+Repare que a resposta foi rápida e no mailtrap está sendo processado o envio, o sexto provavelmente falhou, se formos ao terminal ele ainda não finalizou o 
+processamento, está como "processing" visto que ele vai executar o retry, daqui a alguns segundos vai ser exibida a finalização, pronto, agora foi 
+processado, está como "processed" no terminal.
+
+No mailtrap todos os e-mails chegaram, essa é uma solução. Mas essa forma não é a ideal, não é interessante que fiquemos dependentes que o processo de 
+worker saiba que precisa esperar uma quantidade de segundos específicos, não é uma boa forma de resolver o problema. 
+
+vamos encerrar o worker e até podemos usar esse mecanismo de tries, podemos ter um delay se fizer sentido para a aplicação, mas não se for para um detalhe 
+específico como é o caso do mailtrap.
+
+Para esse cenário, podemos utilizar em SeriesController outra função além da queue() que é o later(), este é igual ao queue() só que ao invés de receber 
+somente o e-mail que vai ser enviado ele espera o momento em que isso será executado além do e-mail. agendando a atividade a ser executada.
+
+Então, esse momento que vai ser executado pode ser um datetime, podemos criar, por exemplo, $now = newnDateTime(); e adicionar no now dois segundos a cada e-mail.
+
+$when = new DateTime();
+$when->modify($index * 2 . 'seconds');
+Mail::to($user)->later($when, $email);
+
+Só que esses dois segundos, vamos acabar adicionando para todos os e-mails que vai ser processado, 
+foreach pegar o índice do usuário, assim, se for o primeiro e-mail que estamos enviando espera dois segundos, se for o segundo usuário espera 
+quatro segundos e assim por diante.
+
+foreach ($userList as $index => $user) 
+
+Contudo, isso depende de alguma interface de manipulação de data do PHP e o Laravel trás algumas facilidades para manipular datas também, então, 
+vamos usar essas facilidades, podemos remover o 
+$when->modify($index * 2 . 'seconds'); 
+e o 
+new DateTime(); 
+para incluir a função now() que retorna um objeto que se parece um datetime e podemos acrescentar um addSeconds() para incluir o índice multiplicado pelo 
+número dois, fica um pouco mais interessante, depende de menos conhecimento da API do PHP.
+
+$when = now()->addSeconds($index * 2);
+Mail::to($user)->later($when, $email);
+
+mas para garantir que então esses dois segundos não foram o suficiente visto que porque pode bater certo nos dez segundos o e-mail foi enviado muito rápido.
+
+$when = now()->addSeconds($index * 5);
+Mail::to($user)->later($when, $email);
+
+agregado a esta nova execução, no lado do consumo 
+# php artisan queue:work --tries=2. 
+com apenas o número de tentaivas sem a espera de qunado executar novamente na tratativa de error.
+
+----------------------------------------------------------------
+public function store(SeriesFormRequestCreate $request)
+{
+    // dd($request->seasonQty);
+    /**injeção de dependência - retornar o objeto SeriesRepository criado */
+    $serie = $this->repository->add($request);
+
+    $userList = User::all();
+    // foreach ($userList as $user) {
+    foreach ($userList as $index => $user) {
+        /** envio de email */
+        $email = new SeriesCreated(
+            $serie->nome,
+            $serie->id,
+            $request->seasonQty,
+            $request->episodesPerSeason
+        );
+        
+        /** varios usuarios de forma síncrona*/
+        // Mail::to($user)->send($email);
+        // sleep(2);
+
+        /** varios usuarios de forma assíncrona*/
+        // Mail::to($user)->queue($email);
+
+        /** varios usuarios de forma assíncrona*/
+        /** com uso do later para agendar a execute */
+        $when = now()->addSeconds($index * 5);
+        Mail::to($user)->later($when, $email);
+    }
+    
+    /** unico usuário*/
+    // Mail::to($request->user())->send($email);
+
+    return to_route('series.index')->with("success", "Cadastrado a série: '{$serie->nome}' com sucesso!");
+}
+----------------------------------------------------------------   
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Aprendemos a adiar o envio do e-mail
+Vimos como configurar as filas de processos no banco de dados
+Aprendemos a executar os processos agendados em fila
+Entendemos como definir o horário de execução de um processo
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+TOP 03

@@ -66,7 +66,8 @@ class SeriesController extends Controller
        
 
         $userList = User::all();
-        foreach ($userList as $user) {
+        // foreach ($userList as $user) {
+        foreach ($userList as $index => $user) {
             /** envio de email */
             $email = new SeriesCreated(
                 $serie->nome,
@@ -80,7 +81,12 @@ class SeriesController extends Controller
             // sleep(2);
 
             /** varios usuarios de forma assíncrona*/
-            Mail::to($user)->queue($email);
+            // Mail::to($user)->queue($email);
+
+            /** varios usuarios de forma assíncrona*/
+            /** com uso do later para agendar a execute */
+            $when = now()->addSeconds($index * 5);
+            Mail::to($user)->later($when, $email);
         }
         
         /** unico usuário*/
@@ -117,6 +123,7 @@ class SeriesController extends Controller
             return to_route('series.index')->with("danger", "Não foi possível realizar atualização de cadastro");
         }
 
+        $request['nome'] = ucwords(strtolower($request['nome'])); 
         $series->fill($request->all());
         $series->save();
         return to_route('series.index')->with("success", "Atualizado a série: '{$series->nome}' com sucesso!");

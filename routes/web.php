@@ -22,13 +22,13 @@ Route::get('/dashboard', function () {
 })->middleware(['auth'])->name('dashboard');
 
 
-Route::get('/email', function () {
-    return new \App\Mail\SeriesCreated(
-        'Sintonia',
-        1,
-        5,
-        10
-    );
-});
+// Route::get('/email', function () {
+//     return new \App\Mail\SeriesCreated(
+//         'Sintonia',
+//         1,
+//         5,
+//         10
+//     );
+// });
 
 require __DIR__.'/auth.php';

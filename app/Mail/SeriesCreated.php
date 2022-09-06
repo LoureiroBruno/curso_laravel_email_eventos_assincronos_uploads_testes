@@ -24,7 +24,8 @@ class SeriesCreated extends Mailable
         public int $episodesPerSeason
         )
     {
-        $this->subject = "Série $nome criada";
+        $nome = strtoupper($nome);
+        $this->subject = "Adicionada a nova série $nome à playlist";
     }
 
     /**

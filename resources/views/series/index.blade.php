@@ -113,8 +113,9 @@
             "bPaginate": true,
             "bScrollCollapse": true,
             "language": {
-                "search": "Pesquisar por",
-                "lengthMenu": "Mostrando _MENU_ registros por página",
+                "search": "Pesquisar: ",
+                "searchPlaceholder": "ID, Descrição etc",
+                "lengthMenu": "Mostrando: _MENU_ registros por página",
                 "zeroRecords": "Nenhum registro encontrado",
                 "info": "Exibindo página _PAGE_ de _PAGES_ ",
                 "infoEmpty": "Exibindo página _PAGES_ de _PAGES_ ",

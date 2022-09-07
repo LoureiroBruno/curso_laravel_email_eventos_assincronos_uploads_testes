@@ -92,30 +92,35 @@ h1 {
 
 #tabela-series_next {
     padding: 10px !important;
-    background: indianred !important;
+    /* background: indianred !important; */
     border-radius: 100%;
     margin: 10px;
-    color: white;
+    color: cornflowerblue;
     text-transform: uppercase;
     text-decoration: burlywood;
-    cursor: pointer
+    cursor: pointer;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
 #tabela-series_previous {
     padding: 10px !important;
-    background: indianred !important;
+    /* background: indianred !important; */
     border-radius: 100%;
     margin: 10px;
-    color: white;
+    color: cornflowerblue;
     text-transform: uppercase;
     text-decoration: burlywood;
-    cursor: pointer
+    cursor: pointer;
+    font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
 }
 
 
 .paginate_button.current {
-    color: black !important;
-    margin: 5px !important;
+    color: white;
+    margin-left: 5px !important;
+    margin-right: 5px;
+    background: orange;
+    border-radius: 10%;
 }
 
 body
@@ -148,16 +153,17 @@ select {
     color-adjust: exact;
     print-color-adjust: exact;
 }
-[type='text'], [type='email'], [type='url'], [type='password'], [type='number'], [type='date'], [type='datetime-local'], [type='month'], [type='search'], [type='tel'], [type='time'], [type='week'], [multiple], textarea, select {
+[type='search'], textarea, select {
     -webkit-appearance: none;
     -moz-appearance: none;
     appearance: none;
     background-color: #d30f0f00;
-    border-color: #6b7280;
-    border-width: 0px;
+    border-color: #d5d9e18a;
+    border-width: 1px;
     padding-left: 0.75rem;
     font-size: 1rem;
     line-height: 1.5rem;
+    border-radius: 10px;
 }
 
 #tabela-series_info {
@@ -168,4 +174,10 @@ select {
 *, *::before, *::after {
     /* box-sizing: border-box; */
     padding-left: 2px;
+}
+
+a {
+    color: var(--bs-link-color);
+    text-decoration: underline;
+    padding: 5px;
 }

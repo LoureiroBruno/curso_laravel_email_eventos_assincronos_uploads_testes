@@ -815,6 +815,133 @@ Vimos como trabalhar com eventos de forma síncrona e assíncrona
 
 TOP 04
 
+Vamos, também, adicionar o atributo no formulário, o enctype visto que precisamos informar que estamos enviando algo além de somente texto, então temos o "multipart/form-data", dessa forma estamos 
+informando ao navegador que esse formulário vai ser enviado com dados além de textos.
+
+<form action="{{ route('series.store') }}" method="post" enctype="multipart/form-data">
+
+Na aplicação vamos atualizar novamente e selecionar o botão "Escolher arquivo" vai abrir uma tela com o arquivos que são permitidos em "arquivos personalizados", teoricamente já conseguimos enviar esses dados.
+Vamos ver como esses dados chegam para nós, voltando para SeriesController, queremos pegar as informações, então no método store() vamos inserir um dump and die da requisição e se pegamos um campo 
+normalmente usamos o input, só que se esse campo é um arquivo colocamos file e o nome é "cover".
+
+dd($request->file('cover'));
+
+Dessa forma vamos conseguir exibir os dados desse arquivo enviado. 
+Vai aparecer uma tela com algumas informações, como a instância de uploaded file, o Laravel já reconheceu a imagem,pegou o mimeType e algumas outras informações desse arquivo.
+
+Caso você esteja no Windows, provavelmente vai receber um erro informando que a extensão file info não está disponível. Você vai precisar acessar o seu php.ini e encontrar nesse arquivo a linha 
+;extension=php_fileinfo e remover o ponto e vírgula do início, que deixa como comentário.
+
+
+os dados da imagem ser salvao no banco, com o endereço de localização da imagem salvao
+php artisan make:migration --table=series add_cover_column
+
+abrir a migration em "database > migrations > add_cover_column", podemos ter nessa tabela algo relacionado a arquivo, talvez um binário ou algo nesse sentido, mas não é o recomendado, o ideal não é salvar
+a imagem em si no banco e sim em algum lugar do disco, no banco de dados armazena somente o caminho para essa capa, então vai ser uma string que vai se chamar "cover" e nullable, opcional
+
+public function up()
+{
+    Schema::table('series', function(Blueprint $table)){
+        $table->string('cover')->nullable();
+    }
+}
+
+Em public function down() simplesmente fazemos o drop column de cover, para reverter essa migration.
+
+public function down()
+{
+    Schema::table('series, function' (Blueprint $table) {
+        $table->dropColumn('cover')
+    });
+}
+
+e rodar o 
+# php artisan migrate
+
+
+Mas, um aviso bem importante, você deve adicionar essa validação do SeriesFormRequest no back-end também, pois aquela validação no front-end que colocamos no HTML é facilmente burlável,
+então é fácil alguém enviar um arquivo malicioso para o servidor, até executáveis. Por isso, é importante adicionar uma validação para garantir que o que estamos recebendo no campo 
+"cover" realmente é uma imagem.
+
+store() precisamos passar por parâmetro o local que vamos armazenar que vai ser em uma pasta chamada series_cover e o nome do arquivo o próprio Laravel que cria para nós
+Se quiséssemos informar manualmente qual o nome do arquivo basta passar o storeAs e o segundo parâmetro é o nome, poderia ser o nome da série e a extensão do arquivo, por exemplo. 
+Nesse caso, vamos deixar o Laravel criar o nome do arquivo. 
+o caminho que salvamos a pasta, então,
+$coverPath = $request->file('cover')->store('series_cover');
+
+Mas, onde essa pasta vai ficar? 
+O Laravel usa por trás outro componente que permite abstrair o acesso aos arquivos de uma forma que podemos ter esse arquivo tanto no disco local quanto em um S3 da AWS, por exemplo, 
+ou em outros lugares.
+Esse tipo de configuração vamos encontrar em "config > filesystems". Neste arquivo temos o FILESYSTEM DISK padrão, ou seja, que vamos utilizar quando chamar o método store() do 
+SeriesController, sendo o padrão local.
+Perceba que as possibilidades são: "local", "ftp", "sftp" e "s3", o serviço da Amazon, é possível adicionar outros serviços, baixar componentes que adicionam outros, mas vamos usar 
+o local para salvar no próprio sistema de arquivos. 
+
+** no driver local a configuração informa que ele vai usar o driver local, o que armazena no próprio disco e que o caminho para esse driver é dentro de storage path, 
+ou seja, no projeto em "storage > app", logo, dentro de app é o caminho padrão para esse disco local.
+
+** E o público, usa o driver local, mas, o caminho é dentro de "app > public", então, dentro de public vamos adicionar os arquivos que precisam ser acessíveis. 
+Logo, para nós usarmos o public da linha 38, temos algumas saídas.
+A primeira seria ir à variável de ambiente, em .env e alterar o "FILESYSTEM_DISK" de "local" para "public", só que dessa forma se no sistema recebermos upload de um relatório 
+que não queremos disponibilizar, apenas receber esse relatório para realizar alguns processamentos sem deixar acessível, seria preciso modificar nesses cenários.
+
+por padrão, nada que armazenarmos pode ser acessível e se for, aí vamos usar a segunda opção em SeriesController que é passar outro parâmetro de options em store(), 
+podemos passar um array de options ou o nome do disco que vamos usar, que vai ser o public. Dessa forma, temos acesso ao cover Path que foi armazenado em public e isso vai retornar o 
+caminho public.
+
+$coverPath = $request->file('cover')->store('series_cover', 'public');
+
+
+--
+Continuando, selecionando o "add" note que a interface está recebendo o SeriesFormRequest, que não tem o coverPath. Logo, o ideal seria que a interface recebesse um objeto de 
+nosso domínio, que não seja um model ou um request do Eloquente e sim um objeto nosso que não dependa de nada.
+Assim, em "app > repositories > SeriesRepository" vamos ter dentro de add() um SeriesFormRequest vindo do nosso domínio e não do Eloquente, enfim, 
+para não complicar posso deixar de desafio para você, inclusive recomendo que pesquise sobre os treinamentos de arquitetura, de TDD para entender melhor todas essas modificações.
+Mas para simplificarmos nesse cenário, o que vamos fazer em SeriesController é adicionar em request o cover path.
+
+    SeriesController:
+
+public function store(SeriesFormRequest $request)
+{
+            $coverPath = $request->file('cover')
+                ->store('series_cover','public')
+            $request->coverPath = $coverPath;
+    $serie = $this->repository->add($request);
+    \App\Events\SeriesCreated::dispatch(
+        $serie->nome,
+        $serie->id,
+        $request->seasonsQty,
+        $request->episodesPerSeason,
+    );
+
+    return to_route('series.index')
+        ->with('mensagem.sucesso', "Série '{$serie->nome}' adicionada com sucesso");
+}
+
+--
+--
+ Como adicionamos o cover path podemos alterar em EloquentSeriesRepository, ao invés de usar o $request->all() vamos pegar somente as informações necessárias, como o "nome" e o "cover".
+
+    EloquentSeriesRepository:
+
+ //código omitido
+
+return DB::transaction(function () use ($request) {
+$serie = Series::create([
+            'nome'=> $request->nome,
+            'cover'=> $request->coverPath, 
+
+        ]);
+$seasons = [];
+for ($i = 1; $i <= $request->seasonsQty; $i++) {
+$seasons[] = [
+    'series_id' => $serie->id,
+    'number' => $i,
+];
+
+// código omitido
+--
+
 
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

@@ -18,7 +18,7 @@
                     @endif
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6 bg-white border-b border-gray-200">
-                            <form action="{{ route('series.store') }}" :nome="old('nome')" method="POST">
+                            <form action="{{ route('series.store') }}" :nome="old('nome')" method="POST" enctype="multipart/form-data">
                                 @csrf
                                 <div class="row mb-3">
                                     <div class="col-8">
@@ -38,6 +38,13 @@
                                         <input type="text" class="form-control" id="episodesPerSeason"
                                             name="episodesPerSeason" placeholder="Epsódios por Temporada"
                                             @isset($episodesPerSeason) value="{{ $episodesPerSeason }}" @endisset>
+                                    </div>
+                                </div>
+
+                                <div class="row mb-3">
+                                    <div class="col-12">
+                                        <label for="cover" class="form-label">Capa</label>
+                                        <input type="file" class="form-control" id="cover" name="cover" accept="image/gif, image/png, image/jpeg, image/jpg"/>
                                     </div>
                                 </div>
 

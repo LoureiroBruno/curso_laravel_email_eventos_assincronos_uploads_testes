@@ -181,3 +181,7 @@ a {
     text-decoration: underline;
     padding: 5px;
 }
+
+.col-auto {
+    padding-top: 30px;
+}

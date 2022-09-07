@@ -59,6 +59,13 @@ class SeriesController extends Controller
      */
     public function store(SeriesFormRequestCreate $request)
     {
+        /** TODO Validation Files */
+        // dd($request->file('cover'));
+
+        $coverPath = $request->file('cover')->store('series_cover', 'public');
+        /** add $coverPath to $request*/
+        $request->coverPath = $coverPath;
+
         $serie = $this->repository->add($request);
         /** listener */
         \App\Events\SeriesCreated::dispatch(

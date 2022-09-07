@@ -781,8 +781,30 @@ protected $listen = [
 Então, vamos adicionar no listen o mapeamento de SeriesCreated que é o evento, importado do namespace correto que vai possuir apenas um listener, por enquanto, 
 o EmailUsersAboutSeriesCreated. Com isso, o Laravel vai saber que sempre que a série for criada, o listener EmailUsersAboutSeriesCreated vai ser executado.
 
+vamos criar um novo listener, então no terminal vamos encerrar o artisan serve com o comando ^C e rodar php artisan make:listener LogSeriesCreated, vai realizar
+o log de uma série criada e podemos passar um parâmetro -e informando qual evento esse listener vai ouvir, no caso SeriesCreated.
+# php artisan make:listener LogSeriesCreated -e SeriesCreated
 
+No projeto, em "app > Listeners > LogSeriesCreated" temos já criado o novo listener que em handle() vamos inserir um log, o SeriesCreated possui o "seriesName, logo, já temos o evento e 
+faremos um log disso, que está no namespace de facades também, temos uma facade de log no Laravel com vários métodos, o que vamos usar é o info, pois é um log informativo. 
+Agora estamos realizando esse log, e precisamos adicionar também no EventServiceProvider esse novo listener LogSeriesCreated.
+O que queremos garantir é que os e-mails não estejam sendo enviados visto que o worker não está rodando e que o log não esteja sendo criado e vamos ver o que vai acontecer.
 
+** realizado um novo teste
+"Adicionar" para criar uma nova série que vamos chamar de "Outra" com uma temporada, um episódio e novamente clicar no botão "Adicionar", vai ser exibida a mensagem informando que
+a série "Outra" foi criada com sucesso.
+esperado é que nenhum e-mail seja enviado, então, vamos para o mailtrap ver se chegou algum, não chegou. Esperamos também que o log não tenha sido salvo, então no arquivo laravel.log 
+foi criado um log "local.INFO: Série Outra criada com sucesso".  
+
+Isso significa que os eventos não estão entrando na fila, os eventos estão sendo executados de forma síncrona. Se quisermos que sejam desempenhados de maneira assíncrona, 
+basta irmos no listener LogSeriesCreated e implementar um ShouldQueue.
+
+class LogSeriesCreated implements ShouldQueue
+
+Então, vamos rodar o php artisan queue:clear --help e podemos passar alguns parâmetros, como, por exemplo, qual a conexão, porém isso tudo é opcional, se simplesmente rodarmos um 
+# php artisan queue:clear, 
+vai limpar da tabela padrão.
+pois foi realizado o teste e esta pendende o envio dos emails na tabela jobs
 
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

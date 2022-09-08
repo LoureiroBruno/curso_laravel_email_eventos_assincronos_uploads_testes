@@ -185,3 +185,13 @@ a {
 .col-auto {
     padding-top: 30px;
 }
+
+#img-capa-serie {
+    width: 350px;
+    height: 250px;
+}
+
+#img-capa-season {
+    width: 55px;
+    height: 40px;
+}

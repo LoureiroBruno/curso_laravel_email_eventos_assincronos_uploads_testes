@@ -942,6 +942,31 @@ $seasons[] = [
 // código omitido
 --
 
+Perceba que retorna uma página com a mensagem "404: Not Found", então tentando acessar direto não conseguimos e se tentarmos com o caminho inteiro até a imagem com 
+a URL http://localhost:8000/storage/app/public/series_cover/TlcrU3Y4Z1b2ONS3e2y6oVJxgn3dDRrlx0tPaO97.jpg esse arquivo não é acessível para nós, visto que a pasta "storage" não é 
+acessível, logo, não é para conseguirmos acessar mesmo.
+
+Tudo o que está na pasta "storage" é para ser manipulado e essa pasta "public" não está realmente pública, o que acontece é que estamos armazenando aqui para informar que o que está 
+dentro de "public" vai poder ser acessível. Só que, se estivéssemos usando outro driver, aí ele armazenaria com uma visibilidade diferente, mas, no driver local ele só cria essa outra 
+pasta.
+
+Para isso realmente ficar acessível vamos interromper o terminal e rodar novamente o php artisan para visualizarmos o comando 
+# storage:link 
+que cria uma link simbólico entre a pasta "public" dentro de storage e o "public" que é acessível pelo usuário. Logo, vamos rodar no terminal o 
+# php artisan storage:link 
+para ser criado um link simbólico e subir o servidor novamente.
+
+Mas, no arquivo "storage" que é o link simbólico é como se estivesse apontando para dentro da pasta "public" em "storage > app > public". Logo, se na URL da aplicação tentarmos acessar
+o link "http://localhost:8000/storage/series_cover/TlcrU3Y4Z1b2ONS3e2y6oVJxgn3dDRrlx0tPaO97.jpg" removendo o "app", fica acessível e a imagem escolhida é exibida.
+
+Repare que é dentro  "storage > app > public", é tornado publico dentro de "public > storage > 'series_cover'"
+
+Agora que essa imagem está acessível graças ao storage::link, conseguimos visualizar. Vamos abrir uma view, em "resources > views > seasons > index.blade", antes da lista queremos 
+exibir uma imagem, essa imagem vai ter um asset() que vai estar dentro de "storage" e o nome do arquivo vai ser $series->cover, vamos incluir a classe que vai nos ajudar a ter essa 
+imagem mais organizada na tela.
+
+
+
 
 
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------

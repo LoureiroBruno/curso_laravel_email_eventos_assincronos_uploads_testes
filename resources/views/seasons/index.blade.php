@@ -10,12 +10,18 @@
                 <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6 bg-white border-b border-gray-200">
-
+                            @if ($series->cover)
+                                <img id="img-capa-serie" src="{{ asset('storage/'.$series->cover) }}" class="img-thumbnail" alt=""/>
+                            @else
+                                <img id="img-capa-serie" src="{{ asset('storage/series_cover/default.png') }}" class="img-thumbnail" alt=""/>
+                            @endif
+                            <br>
                             <table class="table table-sm">
                                 <thead class="thead-tabela-series-topo">
                                     <tr class="th-tabela-series">
                                         <th scope="col" id="td-coluna-acoes-tabela-detalhes-series-season">Lançamento
                                             de ({{ count($seasons) }}) Temporada(s)</th>
+                                        <th scope="col" id="td-coluna-acoes-tabela-detalhes-series-season"  style="width: 30%">Álbum</th>
                                         <th scope="col" id="td-coluna-acoes-tabela-detalhes-episodes">Total de
                                             ({{ $seasons[0]->episodes->count() }}) Episódio(s)</th>
                                     </tr>
@@ -29,6 +35,15 @@
                                                     aria-disabled="true" title="Registrar os episódios">
                                                     <strong>{{ $season->number }}° </strong><i>Temporada</i></a>
                                             </td>
+                                            @if ($series->cover)
+                                                <td id="td-coluna-acoes-tabela-detalhes-series-season">
+                                                    <img id="img-capa-season" src="{{ asset('storage/'.$series->cover) }}" class="img-thumbnail" alt=""/>
+                                                </td>
+                                            @else 
+                                                <td id="td-coluna-acoes-tabela-detalhes-series-season">
+                                                    <img id="img-capa-season" src="{{ asset('storage/series_cover/default.png') }}" class="img-thumbnail" alt=""/>
+                                                </td>
+                                            @endif
                                             <td id="td-coluna-acoes-tabela-detalhes-episodes">
                                                 <span id="bg-tabela-series-episodes" class="badge bg-danger">
                                                     {{ $season->numberOfWatchedEpisodes() }} |
@@ -42,6 +57,7 @@
                                     <tr class="th-tabela-series">
                                         <th scope="col" id="td-coluna-acoes-tabela-detalhes-series-season">Lançamento
                                             de ({{ count($seasons) }}) Temporada(s)</th>
+                                            <th scope="col" id="td-coluna-acoes-tabela-detalhes-series-season"  style="width: 30%">Álbum</th>
                                         <th scope="col" id="td-coluna-acoes-tabela-detalhes-episodes">Total de
                                             ({{ $seasons[0]->episodes->count() }}) Episódio(s)</th>
                                     </tr>

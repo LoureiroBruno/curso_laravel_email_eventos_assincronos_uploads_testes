@@ -2,15 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\SeriesCreated;
+use App\Events\SeriesDeleted;
 use App\Http\Middleware\Autenticador;
 use App\Http\Requests\SeriesFormRequestCreate;
 use App\Http\Requests\SeriesFormRequestUpdate;
 use App\Models\Series;
-use App\Models\User;
 use App\Repositories\EloquentSeriesRepository;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\SeriesCreated;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\File; 
 
 class SeriesController extends Controller
 {
@@ -59,16 +60,17 @@ class SeriesController extends Controller
      */
     public function store(SeriesFormRequestCreate $request)
     {
-        /** TODO Validation Files */
-        // dd($request->file('cover'));
-
-        $coverPath = $request->file('cover')->store('series_cover', 'public');
-        /** add $coverPath to $request*/
-        $request->coverPath = $coverPath;
+        if ($request->cover != "" || $request->cover != null) { 
+            /** TODO Validation Files */
+            // dd($request->file('cover'));
+            $coverPath = $request->file('cover')->store('series_cover', 'public');
+            /** add $coverPath to $request*/
+            $request->coverPath = $coverPath;
+        }
 
         $serie = $this->repository->add($request);
         /** listener */
-        \App\Events\SeriesCreated::dispatch(
+        SeriesCreated::dispatch(
             $serie->nome,
             $serie->id,
             $request->seasonQty,
@@ -85,6 +87,13 @@ class SeriesController extends Controller
         }
 
         $series->delete();
+        
+        if ($series->cover != "" || $series->cover != null) { 
+            /** listener */
+            SeriesDeleted::dispatch(
+                $series->cover
+            );
+        }
 
         return to_route('series.index')->with("success", "Excluído o Registro #{$series->id} | nome: '{$series->nome}' com Sucesso!");
     }

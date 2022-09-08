@@ -2,7 +2,9 @@
 
 namespace App\Providers;
 
+use App\Events\SeriesDeleted;
 use App\Events\SeriesCreated;
+use App\Listeners\ClearFilesAboutSeriesDeleted;
 use App\Listeners\EmailUsersAboutSeriesCreated;
 use App\Listeners\LogSeriesCreated;
 use Illuminate\Auth\Events\Registered;
@@ -20,6 +22,10 @@ class EventServiceProvider extends ServiceProvider
     protected $listen = [
         Registered::class => [
             SendEmailVerificationNotification::class,
+        ],
+
+        SeriesDeleted::class => [
+            ClearFilesAboutSeriesDeleted::class,
         ],
 
         SeriesCreated::class => [

@@ -11,9 +11,33 @@
                     <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
                         <div class="p-6 bg-white border-b border-gray-200">
                             @if ($series->cover)
-                                <img id="img-capa-serie" src="{{ asset('storage/'.$series->cover) }}" class="img-thumbnail" alt=""/>
+                                <div class="container text-start" id="capa-seasons">
+                                    <div class="row">
+                                        <div class="col-2">
+                                            <strong>Capa do Álbum</strong>
+                                        </div>
+                                        <div class="col">
+                                            <img id="img-capa-serie" src="{{ asset('storage/'.$series->cover) }}" class="img-thumbnail" alt=""/>
+                                            <strong class="d-grid gap-3 d-md-flex justify-content-md-center"><u>{{ $series->nome }}</u></strong>
+                                        </div>
+                                        <div class="col">
+                                        </div>
+                                    </div>
+                                </div>
                             @else
-                                <img id="img-capa-serie" src="{{ asset('storage/series_cover/default.png') }}" class="img-thumbnail" alt=""/>
+                                <div class="container text-start" id="capa-seasons">
+                                    <div class="row">
+                                        <div class="col-2">
+                                            <strong>Capa do Álbum</strong>
+                                        </div>
+                                        <div class="col">
+                                            <img id="img-capa-serie" src="{{ asset('storage/series_cover/default.png') }}" class="img-thumbnail" alt="" />
+                                            <strong class="d-grid gap-3 d-md-flex justify-content-md-center"><u>{{ $series->nome }}</u></strong>
+                                        </div>
+                                        <div class="col">
+                                        </div>
+                                    </div>
+                                </div>
                             @endif
                             <br>
                             <table class="table table-sm">
@@ -21,7 +45,8 @@
                                     <tr class="th-tabela-series">
                                         <th scope="col" id="td-coluna-acoes-tabela-detalhes-series-season">Lançamento
                                             de ({{ count($seasons) }}) Temporada(s)</th>
-                                        <th scope="col" id="td-coluna-acoes-tabela-detalhes-series-season"  style="width: 30%">Álbum</th>
+                                        <th scope="col" id="td-coluna-acoes-tabela-detalhes-series-season"
+                                            style="width: 30%">Capa do Álbum</th>
                                         <th scope="col" id="td-coluna-acoes-tabela-detalhes-episodes">Total de
                                             ({{ $seasons[0]->episodes->count() }}) Episódio(s)</th>
                                     </tr>
@@ -37,11 +62,15 @@
                                             </td>
                                             @if ($series->cover)
                                                 <td id="td-coluna-acoes-tabela-detalhes-series-season">
-                                                    <img id="img-capa-season" src="{{ asset('storage/'.$series->cover) }}" class="img-thumbnail" alt=""/>
+                                                    <img id="img-capa-season"
+                                                        src="{{ asset('storage/' . $series->cover) }}"
+                                                        class="img-thumbnail" alt="" />
                                                 </td>
-                                            @else 
+                                            @else
                                                 <td id="td-coluna-acoes-tabela-detalhes-series-season">
-                                                    <img id="img-capa-season" src="{{ asset('storage/series_cover/default.png') }}" class="img-thumbnail" alt=""/>
+                                                    <img id="img-capa-season"
+                                                        src="{{ asset('storage/series_cover/default.png') }}"
+                                                        class="img-thumbnail" alt="" />
                                                 </td>
                                             @endif
                                             <td id="td-coluna-acoes-tabela-detalhes-episodes">
@@ -57,7 +86,8 @@
                                     <tr class="th-tabela-series">
                                         <th scope="col" id="td-coluna-acoes-tabela-detalhes-series-season">Lançamento
                                             de ({{ count($seasons) }}) Temporada(s)</th>
-                                            <th scope="col" id="td-coluna-acoes-tabela-detalhes-series-season"  style="width: 30%">Álbum</th>
+                                        <th scope="col" id="td-coluna-acoes-tabela-detalhes-series-season"
+                                            style="width: 30%">Capa do Álbum</th>
                                         <th scope="col" id="td-coluna-acoes-tabela-detalhes-episodes">Total de
                                             ({{ $seasons[0]->episodes->count() }}) Episódio(s)</th>
                                     </tr>

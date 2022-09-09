@@ -24,14 +24,15 @@ class EventServiceProvider extends ServiceProvider
             SendEmailVerificationNotification::class,
         ],
 
-        SeriesDeleted::class => [
-            ClearFilesAboutSeriesDeleted::class,
-        ],
-
         SeriesCreated::class => [
             EmailUsersAboutSeriesCreated::class,
             LogSeriesCreated::class,
         ],
+
+        SeriesDeleted::class => [
+            ClearFilesAboutSeriesDeleted::class,
+        ],
+
     ];
 
     /**

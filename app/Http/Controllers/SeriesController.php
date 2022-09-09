@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Events\SeriesCreated;
 use App\Events\SeriesDeleted;
 use App\Http\Middleware\Autenticador;
 use App\Http\Requests\SeriesFormRequestCreate;
@@ -10,8 +9,7 @@ use App\Http\Requests\SeriesFormRequestUpdate;
 use App\Models\Series;
 use App\Repositories\EloquentSeriesRepository;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\File; 
+use Illuminate\Support\Facades\Validator;
 
 class SeriesController extends Controller
 {
@@ -60,9 +58,17 @@ class SeriesController extends Controller
      */
     public function store(SeriesFormRequestCreate $request)
     {
+         /** Verified field */
         if ($request->cover != "" || $request->cover != null) { 
-            /** TODO Validation Files */
-            // dd($request->file('cover'));
+            /** Validation Files */
+            $validator = Validator::make($request->all(), [
+                'cover' => 'image|mimes:gif,png,jpeg,jpg|max:2048',
+            ]);
+
+            if ($validator->fails()) { 
+                return redirect()->back()->withErrors($validator);
+            }
+
             $coverPath = $request->file('cover')->store('series_cover', 'public');
             /** add $coverPath to $request*/
             $request->coverPath = $coverPath;
@@ -70,7 +76,7 @@ class SeriesController extends Controller
 
         $serie = $this->repository->add($request);
         /** listener */
-        SeriesCreated::dispatch(
+        \App\Events\SeriesCreated::dispatch(
             $serie->nome,
             $serie->id,
             $request->seasonQty,

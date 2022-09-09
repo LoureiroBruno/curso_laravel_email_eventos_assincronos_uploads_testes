@@ -13,6 +13,16 @@ nav {
     display: flex !important;
 }
 
+.alert.alert-danger {
+    display: flex !important;
+}
+
+.alert.alert-info {
+    margin-top: 10px;
+    display: flex !important;
+}
+
+
 h1 {
     background: currentColor;
     padding-bottom: 80px;
@@ -60,6 +70,11 @@ h1 {
 #td-coluna-acoes-tabela-detalhes-episodes {
     text-align: end;
     padding-top: 10px;
+}
+
+#capa-seasons {
+    background: beige;
+    padding: 10px;
 }
 
 #td-coluna-acoes-tabela-series {

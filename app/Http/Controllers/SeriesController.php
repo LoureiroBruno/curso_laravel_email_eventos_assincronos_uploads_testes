@@ -58,8 +58,8 @@ class SeriesController extends Controller
      */
     public function store(SeriesFormRequestCreate $request)
     {
-         /** Verified field */
-        if ($request->cover != "" || $request->cover != null) { 
+         /** Verified exist field */
+        if ($request->hasFile ('cover')) { 
             /** Validation Files */
             $validator = Validator::make($request->all(), [
                 'cover' => 'image|mimes:gif,png,jpeg,jpg|max:2048',

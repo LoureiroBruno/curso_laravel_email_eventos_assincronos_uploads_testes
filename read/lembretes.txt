@@ -965,12 +965,103 @@ Agora que essa imagem está acessível graças ao storage::link, conseguimos vis
 exibir uma imagem, essa imagem vai ter um asset() que vai estar dentro de "storage" e o nome do arquivo vai ser $series->cover, vamos incluir a classe que vai nos ajudar a ter essa 
 imagem mais organizada na tela.
 
-
-
-
-
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 Aprendemos a enviar arquivos pelo formulário
 Vimos como manipular arquivos de upload com storage do Laravel
 Aprendemos a disponibilizar os arquivos do storage de forma pública
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+TOP 05
+
+
+Vamos passar que se essa requisição tiver o arquivo hasFile('cover'), então o cover path vai ter como resultado o retorno do método store(), caso contrário vai ser nulo.
+
+public function store(SeriesFormRequest $request)
+{
+    $coverPath = $request->hasFile ('cover')
+            ? $request->file('cover')->store('series_cover','public')
+            :null;
+    $request->coverPath = $coverPath;
+    $serie = $this->repository->add($request);
+    \App\Events\SeriesCreated::dispatch(
+        $serie->nome,
+        $serie->id,
+        $request->seasonsQty,
+        $request->episodesPerSeason,
+    );
+
+    return to_route('series.index')
+        ->with('mensagem.sucesso', "Série '{$serie->nome}' adicionada com sucesso");
+}
+
+No mailtrap vamos receber os e-mails normalmente e agora queremos corrigir o botão "Ver série" que chega por e-mail para nós. Essa URL está nos redirecionando para "localhost" e o 
+caminho correto, porém, no sistema está como "localhost:8000", logo, vamos ter que alterar o caminho da aplicação.
+No arquivo .env temos uma propriedade chamada APP_URL na linha 5, que recebe "http://localhost". Só tivemos esse problema agora, pois no momento de montar o e-mail, aquele componente 
+usa o caminho completo, mas na hora de criar uma rota diretamente conseguimos, vamos à aplicação com o botão direito do mouse e escolher a opção "Inspecionar", simplesmente pegar o 
+caminho relativo de onde estamos acessando.
+
+Em APP_URL vamos alterar para "http://localhost:8000". No seu ambiente de produção esse "app url" é o seu domínio real. Com isso, podemos subir novamente o servidor do artisan.
+
+Repare que no terminal, o artisan serve consegue verificar que o ambiente foi modificado e já reinicializa. Modificamos o .env e o servidor percebeu e subiu novamente. 
+Já o queue:listen a cada mensagem sobe o Laravel de novo, logo, já vai ler isso corretamente. Mas vamos interromper e rodar novamente o php artisan queue:listen para ter mais certeza.
+
+No mailtrap vamos apagar todos os e-mails enviados no ícone de carta com um "X" na parte superior e na aplicação remover a série teste 2". Em seguida, clicar no botão "adicionar" e 
+no campo nome inserir "Teste com URL certa e sem capa", com uma temporada e um episódio por temporada e novamente selecionar o botão "adicionar".
+
+Para ajudar a evitar esses bugs, podemos usar testes automatizados. Temos vários treinamentos na plataforma sobre isso, sobre testes e o conceito de testes.
+Na plataforma da Alura em "Dashboard > programação > Boas práticas em PHP" temos o curso PHP e TDD: testes com PHPUnit que é de testes de unidade que é como começamos a estudar 
+testes sobre o PHPUnit TDD, também temos o curso Mocks em PHP: entenda os dublês de testes que é específico sobre dublês de testes, cursos de testes de integração e assim por diante. 
+
+gostaria de ressaltar ser impossível ter todos os bugs de um sistema identificados por pessoas, mesmo que existam equipes especializadas em tentar encontrar esses problemas para 
+garantir qualidade.
+ponto é que testes automatizados fazem parte de um software para garantir a qualidade e que o código esteja funcionando como deveria. Logo, vamos entender o que o Laravel nos 
+traz de facilidade para testes.
+
+traz testes implementados para nós, claro que não são testes tão úteis assim, afinal, são os testes padrão do que já veio com a instalação. Mas, ainda assim, são testes. 
+Antes de tudo, vamos interromper no terminal o artisan serve e executar o comando php vendor/bin/phpunit para rodar o php unit que é a ferramenta de testes padrão do PHP, que o 
+Laravel já instala por padrão.
+
+# php vendor/bin/phpunit
+
+Ao executar esse comando, ele vai rodar todos os testes criados com uma falha, repare que está sendo mostrado a saída padrão e a mensagem de erro informando o que está acontecendo. 
+Nessa tela, o Laravel já nos traz uma informação bem interessante, se ao invés de rodarmos o php unit direto como fizemos, rodar o 
+# php artisan test
+o Laravel vai usar outra configuração que adiciona um plugin ou extensão do phpunit que melhora a saída.
+Quando executarmos o comando, vamos ter uma saída mais interessante. Perceba que temos todos os testes que passaram, ele nos mostra a descrição do que esse teste está executando e 
+na parte de falhas, nos mostra o local que o código está retornando o erro, qual o assert que está falhando.
+Repare que o Laravel trás uma coisa interessante direto na execução, isso é possível de ser atingido sem o Laravel também visto que é uma extensão para o php unit.
+
+Continuando, vamos à pasta de tests que dentro temos duas pastas "Feature" e "Unit" e dois arquivos "CreatesApplication" e "TestCase". Primeiro vamos analisar o "TestCase", o 
+TestCase estende outro test case que também é do Laravel e esse outro test case estende o test case do php unit, ou seja, existe bastante coisa acontecendo por trás.
+
+Além disso, ele também usa uma trait chamada "CreatesApplication", que possui apenas um método que inicializa o kernel do Laravel, ou seja, começa o framework. Todo teste que criarmos,
+vai herdar da classe TestCase visto que dessa forma já vamos ter o Laravel inicializado para nós.
+
+Entendendo isso, vamos analisar um teste que o Laravel já traz por padrão, em "tests > unit > Example.Test". Esse "Example.Test" verifica que verdadeiro é verdadeiro, fazendo assertTrue(true);.
+Esse é um exemplo de teste desnecessário, não traz nenhum valor e, podemos simplesmente remover.
+
+** Agora em "Feature" temos outro tipo de teste, na pirâmide de testes ele estaria no meio, seria o de integração. O que esse tipo de teste verifica? 
+Se a aplicação está se integrando bem com o servidor web, ou com o servidor do banco de dados, ou API externa, entre outros.
+ele testa o código mais alguma coisa que seja solicitada, como o código com o framework, o código com a web ou banco de dados e uma camada acima seria testar com a IA 
+(Artificial Intelligence), ou seja, abrir um navegador.
+
+----------------------------------------------------------------
+resumo
+----------------------------------------------------------------
+
+Recapitulando o que fizemos nesse treinamento, começamos enviando e-mails, inclusive, conhecemos o mailtrap, como recuperar as mensagens e conforme fomos enviando múltiplos 
+e-mails nos deparamos com um problema de performance, para resolver isso, aprendemos sobre as filas de processamento.
+Primeiro, adicionamos e-mails para serem processados na fila, transformamos essa fila em assíncrona com o conceito de mensageria, depois aprendemos a criar eventos, para não 
+precisar somente adicionar envio de e-mails em uma fila: criação de logs ou chamar APIs externas, muita coisa pode ser realizada de forma assíncrona através de eventos. 
+Em seguida, aprendemos sobre uploads de imagens, sua criação e exibição utilizando as facilidades do Laravel e, no final, vimos um pouco sobre testes: facilidades que o Laravel traz, 
+conceitos sobre testes e até ferramentas novas.
+Analisamos boa parte da documentação, um pouco de cada página, assim, quando você precisar de alguma informação que ainda não vimos nos treinamentos, vai ser mais simples de você 
+encontrar, entender e aplicar esse conhecimento.
+
+
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+Entendemos que bugs fazem parte dos sistemas
+Conhecemos a infraestrutura de testes do Laravel
+Aprendemos a configurar nosso ambiente de testes com .env.testing
+Vimos um pouco sobre a ferramenta Laravel Dusk
 ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
